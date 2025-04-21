@@ -1,174 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Realtime Dashboard</title>
-    <style>
-        table { border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid black; padding: 5px 10px; text-align: center; }
-        .header-row { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .section { margin: 10px; }
-        .green-btn {
-            background-color: green;
-            color: white;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        #weather-icon {
-            vertical-align: middle;
-            width: 32px;
-            height: 32px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Daily Schedule</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    table { margin: 0 auto; border-collapse: collapse; width: 80%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    input, select { width: 100%; }
+    .form-container { margin-top: 20px; }
+  </style>
 </head>
 <body>
 
-<div class="section header-row">
-    <div>
-        <div>Week: <span id="week">---</span></div>
-        <div>Date: <span id="date">---</span></div>
-    </div>
-    <div>
-        Weather: <span id="weather">---</span>
-        <img id="weather-icon" src="" alt="">
-        <button class="green-btn" onclick="updateWeather()">Update</button>
-    </div>
-</div>
+  <h1>Daily Schedule</h1>
 
-<table>
-    <tr>
-        <th>Name</th><th>Status</th><th>Location</th>
-        <th>Name</th><th>Status</th><th>Location</th>
-    </tr>
-    <tbody id="table-body">
-        <!-- Rows will be injected here -->
+  <table id="schedule-table">
+    <thead>
+      <tr>
+        <th>Name 1</th>
+        <th>Status 1</th>
+        <th>Location 1</th>
+        <th>Name 2</th>
+        <th>Status 2</th>
+        <th>Location 2</th>
+      </tr>
+    </thead>
+    <tbody id="schedule-body">
+      <!-- Data will be populated here -->
     </tbody>
-</table>
+  </table>
 
-<script>
-    const names = [
-        "Lê Tấn Tiến", "Nguyễn Ngọc Hân", "Đỗ Ngọc Anh", "Nguyễn Thị Thêm",
-        "Nguyễn Quang Bộ", "Nguyễn Văn Thanh", "Lê Thanh Sơn",
-        "Bùi Long Hải", "Nguyễn Công Lập", "Horaguchi"
-    ];
+  <div class="form-container">
+    <h2>Add New Entry</h2>
+    <form id="schedule-form">
+      <input type="text" name="name1" placeholder="Name 1" required>
+      <input type="text" name="status1" placeholder="Status 1" required>
+      <input type="text" name="location1" placeholder="Location 1" required>
+      <input type="text" name="name2" placeholder="Name 2" required>
+      <input type="text" name="status2" placeholder="Status 2" required>
+      <input type="text" name="location2" placeholder="Location 2" required>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
 
-    const statuses = ["Office", "Offday", "Site", "Online"];
-    const totalRows = 5;
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwMXQi8YTiyUX-iKFbELF8BGX9pNVMsND3Up2-lBo8GDE4UaV1oS3zaWJriiaqZ7mX-Ww/exec'; // Replace with your actual API URL
 
-    const rowData = Array.from({ length: totalRows }, (_, i) => {
-        const name1 = names[i * 2] || "";
-        const name2 = names[i * 2 + 1] || "";
-        return {
-            name1,
-            status1: "",
-            location1: "",
-            name2,
-            status2: "",
-            location2: ""
-        };
-    });
-
-    function createDropdown(options, selected) {
-        return `<select>
-            ${options.map(option =>
-                `<option value="${option}" ${option === selected ? 'selected' : ''}>${option}</option>`
-            ).join('')}
-        </select>`;
+    // Function to fetch and display data
+    function fetchData() {
+      fetch(API_URL)
+        .then(response => response.json())
+        .then(data => {
+          const tbody = document.getElementById('schedule-body');
+          tbody.innerHTML = '';
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${row.name1}</td>
+              <td>${row.status1}</td>
+              <td>${row.location1}</td>
+              <td>${row.name2}</td>
+              <td>${row.status2}</td>
+              <td>${row.location2}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(error => console.error('Error fetching data:', error));
     }
 
-    function createRow(data, index) {
-        return `
-        <tr>
-            <td>${createDropdown(names, data.name1)}</td>
-            <td>${createDropdown(statuses, data.status1)}</td>
-            <td><input type="text" value="${data.location1}"></td>
-            <td>${createDropdown(names, data.name2)}</td>
-            <td>${createDropdown(statuses, data.status2)}</td>
-            <td><input type="text" value="${data.location2}"></td>
-        </tr>`;
-    }
+    // Fetch data on page load
+    fetchData();
 
-    function fillTable() {
-        const tableBody = document.getElementById("table-body");
-        tableBody.innerHTML = '';
-        rowData.forEach((data, i) => {
-            tableBody.innerHTML += createRow(data, i);
-        });
-
-        // Update values on change
-        document.querySelectorAll("#table-body tr").forEach((row, rowIndex) => {
-            const selects = row.querySelectorAll("select");
-            const inputs = row.querySelectorAll("input");
-
-            selects[0].value = rowData[rowIndex].name1;
-            selects[1].value = rowData[rowIndex].status1;
-            inputs[0].value = rowData[rowIndex].location1;
-
-            selects[2].value = rowData[rowIndex].name2;
-            selects[3].value = rowData[rowIndex].status2;
-            inputs[1].value = rowData[rowIndex].location2;
-
-            selects[0].addEventListener('change', e => rowData[rowIndex].name1 = e.target.value);
-            selects[1].addEventListener('change', e => rowData[rowIndex].status1 = e.target.value);
-            inputs[0].addEventListener('input', e => rowData[rowIndex].location1 = e.target.value);
-
-            selects[2].addEventListener('change', e => rowData[rowIndex].name2 = e.target.value);
-            selects[3].addEventListener('change', e => rowData[rowIndex].status2 = e.target.value);
-            inputs[1].addEventListener('input', e => rowData[rowIndex].location2 = e.target.value);
-        });
-    }
-
-    function updateDate() {
-        const now = new Date();
-        document.getElementById("date").textContent = now.toLocaleDateString();
-        document.getElementById("week").textContent = "Week " + getWeekNumber(now);
-    }
-
-    function getWeekNumber(date) {
-        const start = new Date(date.getFullYear(), 0, 1);
-        const diff = date - start + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60000);
-        const oneWeek = 604800000;
-        return Math.floor(diff / oneWeek) + 1;
-    }
-
-    async function updateWeather() {
-        const lat = 21.0285;
-        const lon = 105.8542;
-
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`;
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-
-            const weather = data.current_weather;
-            const humidity = data.hourly.relativehumidity_2m[0];
-
-            document.getElementById("weather").textContent =
-                `${weather.temperature}°C | ${humidity}% RH`;
-
-            const iconUrl = getWeatherIconUrl(weather.weathercode);
-            document.getElementById("weather-icon").src = iconUrl;
-
-        } catch (error) {
-            console.error("Weather fetch error:", error);
+    // Handle form submission
+    document.getElementById('schedule-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const params = new URLSearchParams();
+      for (const pair of formData.entries()) {
+        params.append(pair[0], pair[1]);
+      }
+      fetch(API_URL, {
+        method: 'POST',
+        body: params
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.result === 'success') {
+          fetchData(); // Refresh the table
+          this.reset(); // Clear the form
+        } else {
+          console.error('Error submitting data:', data);
         }
-    }
-
-    function getWeatherIconUrl(code) {
-        // Placeholder icon, ideally you'd map code -> icon
-        return `https://openweathermap.org/img/wn/10d.png`;
-    }
-
-    function refresh() {
-        updateDate();
-        updateWeather();
-        fillTable();
-    }
-
-    fillTable();
-    refresh();
-    setInterval(refresh, 5000);
-</script>
+      })
+      .catch(error => console.error('Error submitting data:', error));
+    });
+  </script>
 
 </body>
 </html>
