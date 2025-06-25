@@ -212,26 +212,19 @@
     }
   
     function getWeatherIconUrl(code) {
-      // Có thể thay đổi theo mã code thực tế nếu cần chi tiết
+
       return `https://openweathermap.org/img/wn/10d.png`;
     }
-  
-    // document.addEventListener("DOMContentLoaded", () => {
-    //   updateDate();
-    //   updateWeather();
-    //   fetchDataFromSheet();
 
-    //   setInterval(refresh, 30000);
-    // });
     document.addEventListener("DOMContentLoaded", () => {
       updateDate();
       updateWeather();
-      fetchDataFromSheet(); // lần đầu
+      fetchDataFromSheet(); 
 
       setInterval(() => {
-        fetchDataFromSheet();   // cập nhật dữ liệu
-        updateWeather();        // cập nhật thời tiết
-      }, 10000); // mỗi 10 giây
+        fetchDataFromSheet();   
+        updateWeather();        
+      }, 10000); 
     });
   </script>
   
