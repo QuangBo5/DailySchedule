@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>  Daily Schedule</title>
+  <title>Daily Schedule</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -22,7 +22,7 @@
       border: 2px solid #ccc;
       padding: 10px;
       text-align: left;
-      font-size: 25px; 
+      font-size: 35px; 
     }
     th {
       background-color: #f2f2f2;
@@ -81,7 +81,7 @@
         <div style="font-size: 30px;">Week: <span id="week">---</span></div>
         <div style="font-size: 30px;">Date: <span id="date">---</span></div>
     </div>
-    <h1>  DAILY SCHEDULE</h1>
+    <h1>DAILY SCHEDULE</h1>
     <h1></h1>
     <div>
         Weather: <span id="weather">---</span>
@@ -216,12 +216,22 @@
       return `https://openweathermap.org/img/wn/10d.png`;
     }
   
+    // document.addEventListener("DOMContentLoaded", () => {
+    //   updateDate();
+    //   updateWeather();
+    //   fetchDataFromSheet();
+
+    //   setInterval(refresh, 30000);
+    // });
     document.addEventListener("DOMContentLoaded", () => {
       updateDate();
       updateWeather();
-      fetchDataFromSheet();
+      fetchDataFromSheet(); // lần đầu
 
-      setInterval(refresh, 30000);
+      setInterval(() => {
+        fetchDataFromSheet();   // cập nhật dữ liệu
+        updateWeather();        // cập nhật thời tiết
+      }, 10000); // mỗi 10 giây
     });
   </script>
   
