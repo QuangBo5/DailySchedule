@@ -86,7 +86,7 @@
     <div>
         Weather: <span id="weather">---</span>
         <img id="weather-icon" src="" alt="">
-        <button class="green-btn" onclick="updateWeather()">Update</button>
+        <button class="green-btn" onclick="refreshPage()">Refresh</button>
     </div>
 </div>
 
@@ -212,19 +212,29 @@
     }
   
     function getWeatherIconUrl(code) {
-
+      // Có thể thay đổi theo mã code thực tế nếu cần chi tiết
       return `https://openweathermap.org/img/wn/10d.png`;
     }
+  
+    // document.addEventListener("DOMContentLoaded", () => {
+    //   updateDate();
+    //   updateWeather();
+    //   fetchDataFromSheet();
 
+    //   setInterval(refresh, 30000);
+    // });
+    function refreshPage() {
+      window.location.reload();
+    }
     document.addEventListener("DOMContentLoaded", () => {
       updateDate();
       updateWeather();
-      fetchDataFromSheet(); 
+      fetchDataFromSheet(); // lần đầu
 
       setInterval(() => {
-        fetchDataFromSheet();   
-        updateWeather();        
-      }, 10000); 
+      fetchDataFromSheet();   // cập nhật dữ liệu
+      updateWeather();        // cập nhật thời tiết
+      }, 1800000); // mỗi 30 phút (30 * 60 * 1000 ms)
     });
   </script>
   
