@@ -166,26 +166,48 @@
       });
     }
   
-    async function updateDate() {
-      try {
-        const response = await fetch('https://timeapi.io/api/TimeZone/zone?timeZone=Asia/Ho_Chi_Minh');
-        const data = await response.json();
+    // async function updateDate() {
+    //   try {
+    //     const response = await fetch('https://timeapi.io/api/TimeZone/zone?timeZone=Asia/Ho_Chi_Minh');
+    //     const data = await response.json();
 
-        // Cắt bớt phần mili giây dài
-        const isoTime = data.currentLocalTime.split('.')[0]; // "2025-04-23T10:26:12"
-        const now = new Date(isoTime);
+    //     // Cắt bớt phần mili giây dài
+    //     const isoTime = data.currentLocalTime.split('.')[0]; // "2025-04-23T10:26:12"
+    //     const now = new Date(isoTime);
 
-        if (isNaN(now.getTime())) throw new Error("Invalid date");
+    //     if (isNaN(now.getTime())) throw new Error("Invalid date");
 
-        document.getElementById("date").textContent = now.toLocaleDateString();
-        document.getElementById("week").textContent = "Week " + getWeekNumber(now);
-      } catch (error) {
-        document.getElementById("date").textContent = "Error loading time";
-        document.getElementById("week").textContent = "";
-        console.error("⛔ Failed to fetch or parse time:", error);
-      }
-    }
+    //     document.getElementById("date").textContent = now.toLocaleDateString();
+    //     document.getElementById("week").textContent = "Week " + getWeekNumber(now);
+    //   } catch (error) {
+    //     document.getElementById("date").textContent = "Error loading time";
+    //     document.getElementById("week").textContent = "";
+    //     console.error("⛔ Failed to fetch or parse time:", error);
+    //   }
+    // }
   
+function updateDate() {
+  try {
+    const now = new Date();
+
+    if (isNaN(now.getTime())) {
+      throw new Error("Invalid local date");
+    }
+
+    document.getElementById("date").textContent =
+      now.toLocaleDateString('vi-VN');
+
+    document.getElementById("week").textContent =
+      "Week " + getWeekNumber(now);
+
+  } catch (error) {
+    console.error("Date error:", error);
+    document.getElementById("date").textContent = "---";
+    document.getElementById("week").textContent = "---";
+  }
+}
+
+    
     function getWeekNumber(date) {
       const start = new Date(date.getFullYear(), 0, 1);
       const diff = date - start + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60000);
@@ -193,29 +215,80 @@
       return Math.floor(diff / oneWeek) + 1;
     }
   
+    // async function updateWeather() {
+    //   const lat = 21.0285, lon = 105.8542;
+    //   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`;
+  
+    //   try {
+    //     const response = await fetch(url);
+    //     if (!response.ok) throw new Error('Failed to fetch weather data');
+    //     const data = await response.json();
+    //     const weather = data.current_weather;
+    //     const humidity = data.hourly.relativehumidity_2m[0]; // Gần đúng
+  
+    //     document.getElementById("weather").textContent = `${weather.temperature}°C | ${humidity}% RH`;
+    //     document.getElementById("weather-icon").src = getWeatherIconUrl(weather.weathercode);
+    //   } catch (error) {
+    //     console.error("Weather fetch error:", error);
+    //   }
+    // }
+  
+    // function getWeatherIconUrl(code) {
+    //   // Có thể thay đổi theo mã code thực tế nếu cần chi tiết
+    //   return `https://openweathermap.org/img/wn/10d.png`;
+    // }
+  
     async function updateWeather() {
-      const lat = 21.0285, lon = 105.8542;
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`;
-  
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch weather data');
-        const data = await response.json();
-        const weather = data.current_weather;
-        const humidity = data.hourly.relativehumidity_2m[0]; // Gần đúng
-  
-        document.getElementById("weather").textContent = `${weather.temperature}°C | ${humidity}% RH`;
-        document.getElementById("weather-icon").src = getWeatherIconUrl(weather.weathercode);
-      } catch (error) {
-        console.error("Weather fetch error:", error);
-      }
-    }
-  
-    function getWeatherIconUrl(code) {
-      // Có thể thay đổi theo mã code thực tế nếu cần chi tiết
-      return `https://openweathermap.org/img/wn/10d.png`;
-    }
-  
+  const lat = 21.0285;   // Hanoi
+  const lon = 105.8542;  // Hanoi
+
+  const url =
+    "https://api.open-meteo.com/v1/forecast" +
+    "?latitude=" + lat +
+    "&longitude=" + lon +
+    "&hourly=temperature_2m,relativehumidity_2m" +
+    "&timezone=Asia/Ho_Chi_Minh";
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Weather API error");
+
+    const data = await res.json();
+
+    const now = new Date();
+
+    // Làm tròn về đầu giờ
+    now.setMinutes(0, 0, 0);
+
+    const isoHour =
+      now.getFullYear() + "-" +
+      String(now.getMonth() + 1).padStart(2, "0") + "-" +
+      String(now.getDate()).padStart(2, "0") + "T" +
+      String(now.getHours()).padStart(2, "0") + ":00";
+
+    const idx = data.hourly.time.indexOf(isoHour);
+
+    if (idx === -1) throw new Error("Hour not found");
+
+    const temperature = data.hourly.temperature_2m[idx];
+    const humidity = data.hourly.relativehumidity_2m[idx];
+
+    document.getElementById("weather").textContent =
+      temperature + "°C | " + humidity + "% RH";
+
+    document.getElementById("weather-icon").src =
+      "https://cdn-icons-png.flaticon.com/512/1163/1163624.png";
+
+  } catch (err) {
+    console.error("Weather error:", err);
+    document.getElementById("weather").textContent = "---";
+  }
+}
+
+
+
+
+
     // document.addEventListener("DOMContentLoaded", () => {
     //   updateDate();
     //   updateWeather();
