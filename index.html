@@ -110,6 +110,7 @@
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbyfQUpog4dd7pHx_2GlLFcrb4mT6gBLRPlFKnjkGcClr9UzT-SdCSwyREENhoo3iOeXMA/exec';
+    const DISPLAY_ROW_COUNT = 7;
     let rowData = [];
     const statuses = ['Available', 'Busy', 'Offline'];
   
@@ -119,7 +120,7 @@
         if (!res.ok) throw new Error('Failed to fetch data');
         const data = await res.json();
   
-        rowData = data.slice(0, 5).map(item => ({
+        rowData = data.slice(0, DISPLAY_ROW_COUNT).map(item => ({
           name1: item.name1 || '',
           status1: item.status1 || '',
           location1: item.location1 || '',
@@ -128,7 +129,7 @@
           location2: item.location2 || ''
         }));
   
-        while (rowData.length < 2) {
+        while (rowData.length < DISPLAY_ROW_COUNT) {
           rowData.push({
             name1: '',
             status1: 'Offline',
