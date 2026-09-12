@@ -144,10 +144,32 @@
         Weather: <span id="weather">---</span>
         <img id="weather-icon" src="" alt="">
         <button class="green-btn" onclick="refreshPage()">Refresh</button>
+        <button onclick="openSettingsDialog()">Setting</button>
+    </div>
+</div>
+
+<dialog id="settings-dialog">
+    <h2 style="margin-top: 0;">Cài đặt giờ sáng màn hình</h2>
+    <div style="text-align: left; margin-bottom: 10px;">
+        <label>Sáng từ: <input type="time" id="light-start-input"></label>
+    </div>
+    <div style="text-align: left; margin-bottom: 10px;">
+        <label>Sáng đến: <input type="time" id="light-end-input"></label>
+    </div>
+    <div style="text-align: left; color: #555; font-size: 14px; margin-bottom: 15px;">
+        Ngoài khoảng giờ này màn hình sẽ tự động tối (dark).
+    </div>
+    <div>
+        <button onclick="saveBlackoutSettings()">Lưu</button>
+        <button onclick="closeSettingsDialog()">Đóng</button>
+    </div>
+    <hr>
+    <div style="text-align: left; font-size: 14px; color: #555; margin-bottom: 10px;">Test thủ công:</div>
+    <div>
         <button onclick="testBlackout(true)">Dark</button>
         <button onclick="testBlackout(false)">Light</button>
     </div>
-</div>
+</dialog>
 
 
 
@@ -489,17 +511,72 @@ function updateDate() {
       window.location.reload();
     }
 
-    const BLACKOUT_START_MIN = 8 * 60 + 55; //17 * 60 + 30; // 17:30
-    const BLACKOUT_END_MIN = 8 * 60 + 30;    // 08:30
     const BLACKOUT_REVEAL_MS = 5000;         // chạm vào thì sáng tạm 5 giây
+    const BLACKOUT_SETTINGS_KEY = "scheduleBlackoutSettings";
+    const DEFAULT_LIGHT_START_MIN = 8 * 60 + 30;  // 08:30
+    const DEFAULT_LIGHT_END_MIN = 17 * 60 + 30;   // 17:30
 
+    let lightStartMin = DEFAULT_LIGHT_START_MIN;
+    let lightEndMin = DEFAULT_LIGHT_END_MIN;
     let blackoutRevealTimer = null;
+
+    function minutesToTimeInput(min) {
+      const h = Math.floor(min / 60).toString().padStart(2, "0");
+      const m = (min % 60).toString().padStart(2, "0");
+      return h + ":" + m;
+    }
+
+    function timeInputToMinutes(value) {
+      const parts = value.split(":");
+      return Number(parts[0]) * 60 + Number(parts[1]);
+    }
+
+    function loadBlackoutSettings() {
+      try {
+        const raw = localStorage.getItem(BLACKOUT_SETTINGS_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (Number.isInteger(saved.lightStartMin)) lightStartMin = saved.lightStartMin;
+        if (Number.isInteger(saved.lightEndMin)) lightEndMin = saved.lightEndMin;
+      } catch (err) {
+        console.error("Không đọc được cài đặt giờ sáng/tối:", err);
+      }
+    }
+
+    function openSettingsDialog() {
+      document.getElementById("light-start-input").value = minutesToTimeInput(lightStartMin);
+      document.getElementById("light-end-input").value = minutesToTimeInput(lightEndMin);
+      document.getElementById("settings-dialog").showModal();
+    }
+
+    function closeSettingsDialog() {
+      document.getElementById("settings-dialog").close();
+    }
+
+    function saveBlackoutSettings() {
+      const startValue = document.getElementById("light-start-input").value;
+      const endValue = document.getElementById("light-end-input").value;
+      if (!startValue || !endValue) return;
+
+      lightStartMin = timeInputToMinutes(startValue);
+      lightEndMin = timeInputToMinutes(endValue);
+      localStorage.setItem(BLACKOUT_SETTINGS_KEY, JSON.stringify({ lightStartMin, lightEndMin }));
+
+      updateBlackoutState();
+      closeSettingsDialog();
+    }
 
     function isBlackoutTime() {
       const now = new Date();
       const minutes = now.getHours() * 60 + now.getMinutes();
-      // Khung giờ qua nửa đêm (17:30 -> 08:30 hôm sau)
-      return minutes >= BLACKOUT_START_MIN || minutes < BLACKOUT_END_MIN;
+      if (lightStartMin === lightEndMin) return false; // cấu hình rỗng -> coi như luôn sáng
+
+      if (lightStartMin < lightEndMin) {
+        // Khoảng sáng nằm trong một ngày (vd 08:30 -> 17:30)
+        return !(minutes >= lightStartMin && minutes < lightEndMin);
+      }
+      // Khoảng sáng qua nửa đêm (vd 20:00 -> 06:00)
+      return !(minutes >= lightStartMin || minutes < lightEndMin);
     }
 
     function updateBlackoutState() {
@@ -548,6 +625,7 @@ function updateDate() {
       updateWeather();
       updateForecast();
       fetchDataFromSheet(); // lần đầu
+      loadBlackoutSettings();
       updateBlackoutState();
 
       setInterval(() => {
