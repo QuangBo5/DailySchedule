@@ -108,9 +108,18 @@
 	    .temp-min {
 	      background: #f8f7f7;
 	    }
-	  </style>
+	    #screen-blackout {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 9999;
+      display: none;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
+<div id="screen-blackout"></div>
   <!-- <div class="section header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"></div>
     <div style="text-align: left;"></div>
         <div>Week: <span id="week">Week 16</span></div>
@@ -135,6 +144,8 @@
         Weather: <span id="weather">---</span>
         <img id="weather-icon" src="" alt="">
         <button class="green-btn" onclick="refreshPage()">Refresh</button>
+        <button onclick="testBlackout(true)">Dark</button>
+        <button onclick="testBlackout(false)">Light</button>
     </div>
 </div>
 
@@ -317,6 +328,7 @@
 	        "https://api.open-meteo.com/v1/forecast" +
 	        "?latitude=" + HANOI_LAT +
 	        "&longitude=" + HANOI_LON +
+	        "&current=weather_code" +
 	        "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
 	        "&forecast_days=" + FORECAST_DAYS +
 	        "&timezone=Asia/Ho_Chi_Minh";
@@ -328,7 +340,10 @@
 	        const data = await res.json();
 	        const forecast = data.daily.time.map((time, index) => ({
 	          time,
-	          weatherCode: data.daily.weather_code[index],
+	          // Ngày hôm nay (index 0) dùng mã thời tiết hiện tại để khớp thực tế thay vì mã tổng hợp cả ngày
+	          weatherCode: index === 0 && data.current
+	            ? data.current.weather_code
+	            : data.daily.weather_code[index],
 	          maxTemp: data.daily.temperature_2m_max[index],
 	          minTemp: data.daily.temperature_2m_min[index]
 	        }));
@@ -473,17 +488,75 @@ function updateDate() {
     function refreshPage() {
       window.location.reload();
     }
+
+    const BLACKOUT_START_MIN = 8 * 60 + 55; //17 * 60 + 30; // 17:30
+    const BLACKOUT_END_MIN = 8 * 60 + 30;    // 08:30
+    const BLACKOUT_REVEAL_MS = 5000;         // chạm vào thì sáng tạm 5 giây
+
+    let blackoutRevealTimer = null;
+
+    function isBlackoutTime() {
+      const now = new Date();
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      // Khung giờ qua nửa đêm (17:30 -> 08:30 hôm sau)
+      return minutes >= BLACKOUT_START_MIN || minutes < BLACKOUT_END_MIN;
+    }
+
+    function updateBlackoutState() {
+      const overlay = document.getElementById("screen-blackout");
+      if (isBlackoutTime()) {
+        if (!blackoutRevealTimer) {
+          overlay.style.display = "block";
+        }
+      } else {
+        overlay.style.display = "none";
+        if (blackoutRevealTimer) {
+          clearTimeout(blackoutRevealTimer);
+          blackoutRevealTimer = null;
+        }
+      }
+    }
+
+    function revealScreenTemporarily() {
+      const overlay = document.getElementById("screen-blackout");
+      overlay.style.display = "none";
+      if (blackoutRevealTimer) {
+        clearTimeout(blackoutRevealTimer);
+      }
+      blackoutRevealTimer = setTimeout(() => {
+        blackoutRevealTimer = null;
+        updateBlackoutState();
+      }, BLACKOUT_REVEAL_MS);
+    }
+
+    document.getElementById("screen-blackout").addEventListener("click", revealScreenTemporarily);
+    document.getElementById("screen-blackout").addEventListener("touchstart", revealScreenTemporarily);
+
+    // Nút test thủ công: ép đen/sáng ngay để kiểm tra, không chờ đúng khung giờ.
+    // Lịch tự động (setInterval mỗi phút) vẫn chạy nên sau tối đa 1 phút sẽ quay lại đúng theo giờ thật.
+    function testBlackout(forceDark) {
+      const overlay = document.getElementById("screen-blackout");
+      if (blackoutRevealTimer) {
+        clearTimeout(blackoutRevealTimer);
+        blackoutRevealTimer = null;
+      }
+      overlay.style.display = forceDark ? "block" : "none";
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       updateDate();
       updateWeather();
       updateForecast();
       fetchDataFromSheet(); // lần đầu
+      updateBlackoutState();
 
       setInterval(() => {
       fetchDataFromSheet();   // cập nhật dữ liệu
       updateWeather();        // cập nhật thời tiết
       updateForecast();       // update forecast
       }, 1800000); // mỗi 30 phút (30 * 60 * 1000 ms)
+
+      setInterval(updateBlackoutState, 60000); // kiểm tra giờ đen màn hình mỗi phút
     });
   </script>
   
